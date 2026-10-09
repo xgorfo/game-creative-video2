@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Word Match: student life vocabulary</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f8;--card:#fff;--ink:#16203d;--mute:#5d6a8c;--line:#d5dbea;--ok:#0e9f6e;--okbg:#dff5ec;--bad:#d93a45;--acc:#3b4cca;--accbg:#e4e8ff;--accink:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121933;--card:#1b2547;--ink:#eef1ff;--mute:#9aa6cf;--line:#2c3866;--ok:#3ddc97;--okbg:#17403a;--bad:#ff6b73;--acc:#7e8cff;--accbg:#2a3570;--accink:#10173a}}
+:root[data-theme="dark"]{--bg:#121933;--card:#1b2547;--ink:#eef1ff;--mute:#9aa6cf;--line:#2c3866;--ok:#3ddc97;--okbg:#17403a;--bad:#ff6b73;--acc:#7e8cff;--accbg:#2a3570;--accink:#10173a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,system-ui,sans-serif;line-height:1.45}
+main{max-width:760px;margin:0 auto;padding:16px}
+h1,h2,.num{font-family:Unbounded,Manrope,system-ui,sans-serif}
+h1{font-size:22px;margin:8px 0 4px}
+h2{font-size:16px;margin:0 0 8px}
+p{margin:0 0 10px}
+.mute{color:var(--mute);font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.top{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+.top div{flex:1 1 90px}.top b{display:block;font-size:20px}
+.cols{display:grid;grid-template-columns:1fr 1.5fr;gap:10px}
+.col{display:grid;gap:8px;align-content:start}
+button{font:inherit;cursor:pointer;border-radius:10px;border:2px solid var(--line);background:var(--card);color:var(--ink);padding:10px 12px;text-align:left}
+button:hover:not(:disabled){border-color:var(--acc)}
+button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+button.w{font-weight:800}
+button.sel{border-color:var(--acc);background:var(--accbg)}
+button.done{border-color:var(--ok);background:var(--okbg);cursor:default}
+button.wrong{border-color:var(--bad);animation:sh .35s}
+button.main{background:var(--acc);color:var(--accink);border-color:var(--acc);font-weight:800;text-align:center;width:100%}
+@keyframes sh{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@media (prefers-reduced-motion:reduce){button.wrong{animation:none}}
+.learned div{padding:6px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.learned i{color:var(--mute)}
+.quote{border-left:4px solid var(--acc);padding-left:12px;color:var(--mute);font-style:italic}
+@media (max-width:480px){.cols{grid-template-columns:1fr 1.3fr;gap:6px}button{padding:8px;font-size:14px}}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+const WORDS=[
+['graduate','to finish your studies and receive a degree','"hopefully I\'m about to graduate next semester"'],
+['in-state','living in the same state as the university, often paying less','"I\'m an in-state student"'],
+['originally','at the beginning, before things changed','"I\'m from Bangladesh originally"'],
+['reside','to live in a particular place','"I actually reside in the Detroit area"'],
+['semester','one of the two main parts of a school year','"about nine grand per semester"'],
+['scholarship','money given to a student to help pay for education','"through scholarships and all that"'],
+['fortunate','lucky; having good things happen to you','"I\'ve been fortunate, I guess"'],
+['priority','something treated as more important than other things','"they take the priority of the university itself"'],
+['economy','the system of money, jobs, and trade in a country','"the economy is just not going to help"'],
+['debt','money that you owe to someone','"am I going back to school getting more debt"'],
+['foundation','the base on which something important is built','"education is like the foundation"'],
+['implement','to put a plan or system into action','"some kind of program that implements just that"'],
+['employer','a person or company that gives people jobs','"go directly to employers"'],
+['beneficial','helpful; having a good effect','"to have education be more beneficial"'],
+['guarantee','to promise that something will definitely happen','"to almost guarantee that students can find jobs"'],
+['hand-in-hand','closely connected and working together','"education actually go hand-in-hand with finding a job"'],
+['continuously','without stopping; again and again over time','"able to pay for college continuously"'],
+['currently','at the present time; right now','"I work currently at two jobs on campus"']
+];
+const PER=6, ROUNDS=3;
+let G;
+const $=s=>document.querySelector(s);
+const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
+function start(){
+  const pool=shuf(WORDS.map((_,i)=>i));
+  G={round:0,pool,score:0,mistakes:0,streak:0,best:0,learned:[],sel:{w:null,d:null},wrong:null,done:[],finished:false};
+  newRound();
+}
+function newRound(){
+  G.ids=G.pool.slice(G.round*PER,G.round*PER+PER);
+  G.lw=shuf(G.ids); G.ld=shuf(G.ids); G.done=[]; G.sel={w:null,d:null}; G.wrong=null;
+  render();
+}
+function pick(side,id){
+  if(G.done.includes(id))return;
+  G.wrong=null;
+  G.sel[side]=G.sel[side]===id?null:id;
+  const {w,d}=G.sel;
+  if(w!==null&&d!==null){
+    if(w===d){
+      G.done.push(w); G.learned.push(w); G.streak++; G.best=Math.max(G.best,G.streak);
+      G.score+=10+Math.min(G.streak-1,5)*2;
+    }else{
+      G.mistakes++; G.streak=0; G.score=Math.max(0,G.score-3); G.wrong={w,d};
+    }
+    G.sel={w:null,d:null};
+  }
+  render();
+}
+function next(){
+  if(G.round+1>=ROUNDS){G.finished=true;render();return}
+  G.round++; newRound();
+}
+function render(){
+  const a=$('#app');
+  if(G.finished){
+    const total=ROUNDS*PER, acc=Math.round(total/(total+G.mistakes)*100);
+    const stars=acc>=90?'★★★':acc>=70?'★★☆':'★☆☆';
+    a.innerHTML='<h1>Finished! '+stars+'</h1><div class="card"><div class="top"><div><span class="mute">Score</span><b class="num">'+G.score+'</b></div><div><span class="mute">Accuracy</span><b class="num">'+acc+'%</b></div><div><span class="mute">Mistakes</span><b class="num">'+G.mistakes+'</b></div><div><span class="mute">Best streak</span><b class="num">'+G.best+'</b></div></div>'+
+    '<p class="quote">"To have education go hand-in-hand with finding a job."</p></div>'+
+    '<div class="card learned"><h2>Words you learned</h2>'+G.learned.map(i=>'<div><b>'+WORDS[i][0]+'</b>: '+WORDS[i][1]+'<br><i>'+esc(WORDS[i][2])+'</i></div>').join('')+'</div>'+
+    '<button class="main" onclick="start()">Play again with new words</button>';
+    return;
+  }
+  const complete=G.done.length===PER;
+  let h='<h1>Word Match</h1><p class="mute">Tap a word, then its meaning. Words come from a student\'s interview about the cost of college.</p>'+
+  '<div class="card top"><div><span class="mute">Round</span><b class="num">'+(G.round+1)+'/'+ROUNDS+'</b></div><div><span class="mute">Score</span><b class="num">'+G.score+'</b></div><div><span class="mute">Streak</span><b class="num">'+G.streak+'</b></div><div><span class="mute">Mistakes</span><b class="num">'+G.mistakes+'</b></div></div>'+
+  '<div class="cols"><div class="col" aria-label="Words">'+
+  G.lw.map(i=>{const c=G.done.includes(i)?' done':G.sel.w===i?' sel':G.wrong&&G.wrong.w===i?' wrong':'';return '<button class="w'+c+'" onclick="pick(\'w\','+i+')"'+(c===' done'?' aria-disabled="true"':'')+'>'+WORDS[i][0]+'</button>'}).join('')+
+  '</div><div class="col" aria-label="Meanings">'+
+  G.ld.map(i=>{const c=G.done.includes(i)?' done':G.sel.d===i?' sel':G.wrong&&G.wrong.d===i?' wrong':'';return '<button class="'+c.trim()+'" onclick="pick(\'d\','+i+')">'+WORDS[i][1]+'</button>'}).join('')+
+  '</div></div>';
+  if(G.done.length){
+    h+='<div class="card learned" style="margin-top:12px"><h2>In the interview</h2>'+G.done.map(i=>'<div><b>'+WORDS[i][0]+'</b> <i>'+esc(WORDS[i][2])+'</i></div>').join('')+'</div>';
+  }
+  if(complete)h+='<button class="main" style="margin-top:12px" onclick="next()">'+(G.round+1>=ROUNDS?'See results':'Next round')+'</button>';
+  a.innerHTML=h;
+}
+start();
+</script>
+</body>
+</html>
